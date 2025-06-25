@@ -22,7 +22,8 @@ class NetworkMonitor:
             'remaining_time': '--',
             'tokens': '--',
             'cost': '--',
-            'status': '--'
+            'status': '--',
+            'model': '--'
         }
         self.daily_costs = {}
         self.total_cost = 0
@@ -144,6 +145,35 @@ class NetworkMonitor:
                             tokens = self.clean_ansi_codes(parts[4])
                             cost = self.clean_ansi_codes(parts[5])
                             
+                            # 提取模型信息 - 需要檢查當前行和接下來的幾行
+                            models = []
+                            # 檢查當前行的模型列
+                            if len(parts) > 3:
+                                model_info = self.clean_ansi_codes(parts[3])
+                                if 'opus-4' in model_info:
+                                    models.append('opus-4')
+                                elif 'sonnet-4' in model_info:
+                                    models.append('sonnet-4')
+                                elif 'haiku-3' in model_info:
+                                    models.append('haiku-3')
+                            
+                            # 檢查接下來的1-2行是否包含其他模型
+                            for j in range(i+1, min(i+3, len(lines))):
+                                next_line = lines[j]
+                                if '│' in next_line and 'PROJECTED' not in next_line:
+                                    next_parts = next_line.split('│')
+                                    if len(next_parts) > 3:
+                                        next_model_info = self.clean_ansi_codes(next_parts[3])
+                                        if 'opus-4' in next_model_info and 'opus-4' not in models:
+                                            models.append('opus-4')
+                                        elif 'sonnet-4' in next_model_info and 'sonnet-4' not in models:
+                                            models.append('sonnet-4')
+                                        elif 'haiku-3' in next_model_info and 'haiku-3' not in models:
+                                            models.append('haiku-3')
+                            
+                            # 組合模型名稱，過濾掉 synthetic
+                            model = ', '.join(models) if models else '--'
+                            
                             # 嘗試多種日期格式
                             # 格式1: 6/21/2025, 11:52:17 AM
                             # 格式2: 2025/6/21 11:52:17
@@ -169,19 +199,31 @@ class NetworkMonitor:
                                     'remaining_time': times['remaining_time'],
                                     'tokens': tokens if tokens and tokens != '-' else '--',
                                     'cost': cost if cost and cost != '-' else '--',
-                                    'status': 'ACTIVE'
+                                    'status': 'ACTIVE',
+                                    'model': model
                                 }
                                 self.ccusage_failed_count = 0  # 成功時重置計數器
                                 return True
                 
                 # 如果沒有 ACTIVE 狀態，找最近的已完成對話
                 for line in reversed(lines):
-                    if '│' in line and not ('gap' in line or 'ACTIVE' in line or 'PROJECTED' in line):
+                    if '│' in line and not ('gap' in line or 'ACTIVE' in line or 'PROJECTED' in line or 'Block Start' in line):
                         parts = line.split('│')
                         if len(parts) >= 6:
                             session_info = self.clean_ansi_codes(parts[1])
                             tokens = self.clean_ansi_codes(parts[4])
                             cost = self.clean_ansi_codes(parts[5])
+                            
+                            # 對於非活躍會話，模型信息可能在同一行
+                            model = '--'
+                            if len(parts) > 3:
+                                model_info = self.clean_ansi_codes(parts[3])
+                                if 'opus-4' in model_info:
+                                    model = 'opus-4'
+                                elif 'sonnet-4' in model_info:
+                                    model = 'sonnet-4'
+                                elif 'haiku-3' in model_info:
+                                    model = 'haiku-3'
                             
                             if tokens and tokens != '-':
                                 # 嘗試多種日期格式
@@ -200,7 +242,8 @@ class NetworkMonitor:
                                         'remaining_time': '已完成',
                                         'tokens': tokens,
                                         'cost': cost,
-                                        'status': 'COMPLETED'
+                                        'status': 'COMPLETED',
+                                        'model': model
                                     }
                                     self.ccusage_failed_count = 0  # 成功時重置計數器
                                     return True
@@ -563,6 +606,10 @@ class NetworkMonitor:
                 
             print(f"  🎫 Tokens: {formatted_tokens}")
             print(f"  💰 費用: {self.ccusage_data['cost']}")
+        
+        # 模型信息
+        if self.ccusage_data['model'] != '--':
+            print(f"  🤖 模型: {self.ccusage_data['model']}")
         
         # 狀態
         status_text = {
