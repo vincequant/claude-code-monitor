@@ -658,6 +658,7 @@ class NetworkMonitor:
             print("  暫無歷史數據")
         
         print(f"\n🕐 最後更新: {current_time}")
+        print("\n🔗 GitHub: https://github.com/vincequant/claude-code-monitor")
         print("\n按 Ctrl+C 停止監控")
         print("=" * 54)
     
