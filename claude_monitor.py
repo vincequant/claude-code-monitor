@@ -120,8 +120,8 @@ class NetworkMonitor:
             env = os.environ.copy()
             env['PATH'] = f"/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:{env.get('PATH', '')}"
             
-            result = subprocess.run([npx_path, 'ccusage@latest', 'blocks', '--mode', 'calculate'], 
-                                  capture_output=True, text=True, timeout=30, env=env)
+            result = subprocess.run([npx_path, '--yes', 'ccusage@latest', 'blocks', '--mode', 'calculate'], 
+                                  capture_output=True, text=True, timeout=60, env=env)
             
             if result.returncode == 0:
                 output = result.stdout
@@ -358,8 +358,8 @@ class NetworkMonitor:
             env['PATH'] = f"/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:{env.get('PATH', '')}"
             
             # 使用 ccusage daily 命令來獲取每日費用，使用 calculate 模式確保準確性
-            result = subprocess.run([npx_path, 'ccusage@latest', 'daily', '--mode', 'calculate', '--order', 'asc'], 
-                                  capture_output=True, text=True, timeout=30, env=env)
+            result = subprocess.run([npx_path, '--yes', 'ccusage@latest', 'daily', '--mode', 'calculate', '--order', 'asc'], 
+                                  capture_output=True, text=True, timeout=60, env=env)
             
             if result.returncode != 0:
                 return False
@@ -402,8 +402,8 @@ class NetworkMonitor:
             
             # 如果 daily 命令沒有返回數據，使用 blocks 命令作為備用
             if not daily_costs:
-                result = subprocess.run([npx_path, 'ccusage@latest', 'blocks', '--mode', 'calculate'], 
-                                      capture_output=True, text=True, timeout=30, env=env)
+                result = subprocess.run([npx_path, '--yes', 'ccusage@latest', 'blocks', '--mode', 'calculate'], 
+                                      capture_output=True, text=True, timeout=60, env=env)
                 
                 if result.returncode == 0:
                     output = result.stdout
